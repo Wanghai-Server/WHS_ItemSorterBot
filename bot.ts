@@ -16,7 +16,6 @@ const botOptions = {
   version: "1.21.10",
   keepAlive: true,
 };
-const { mineflayer: mineflayerViewer } = require('prismarine-viewer')
 
 const settings = require("./settings.json");
 const fpn = settings["fake_player_name"];
@@ -555,14 +554,6 @@ function setupBot() {
     isReconnecting = false;
     await sleep(1000);
     bot.chat("空投机器人lyh1378已上线（Version 2.0.1）");
-    // bot.pvp.movements.allow1by1towers=false;
-    bot.pvp.movements.canDig=false;
-    bot.pvp.movements.allowSprinting = true;
-    bot.pvp.movements.allowParkour=true
-    bot.pvp.movements.maxDropDown = 100
-
-    // inventoryViewer(bot)
-    // mineflayerViewer(bot, {port: 3007, firstPerson: false});
   });
 
   bot.on("end", (reason: string) => {
