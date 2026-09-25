@@ -56,6 +56,7 @@ process.stdin.on("data", (data)=>{
     }catch(e){
       console.log(e)
     }
+    return;
   }
   bot.chat(data.toString().trim());
 })
@@ -84,7 +85,6 @@ class ItemRequest {
     this.unit = unit;
     let confs = getConfigs(name);
     if (confs.length === 0) throw new Error("物品 " + name + " 检索失败！");
-    console.log(confs);
     this.stack = confs[0][3] ?? 64;
     for (let i of confs) {
       let w = i[1];
@@ -138,7 +138,6 @@ class ItemRequest {
     const maxAttempts = 5;
     let totalTaken = 0;
     let successful = 1;
-    console.log(itemid)
     for (let i = 0; i < this.stand_positions.length; i++) {
       attempts = 0;
       let Pos = this.stand_positions[i];
@@ -176,7 +175,6 @@ class ItemRequest {
           const items = chest.containerItems();
           const targetItems = items.filter(
             (i: { type: number; count: number; name: string }) => {
-              // console.log(i.name);
               return i.name && i.name.includes(itemid);
             }
           );
@@ -200,7 +198,6 @@ class ItemRequest {
           for (const item of targetItems) {
             if (takeCount <= 0) break;
             const take = Math.min(item.count, takeCount);
-            console.log("取出", take, "个物品")
             await chest.withdraw(item.type, null, take);
             tossItems.push({ type: item.type, count: take, name: item.name });
             totalTaken += take;
@@ -208,7 +205,7 @@ class ItemRequest {
             takeCount -= take;
           }
           await chest.close();
-          console.log(`本次取出 ${totalTaken} 个，剩余需求 ${remaining}`);
+          console.log(`本次取出 ${totalTaken} / ${remaining} 个 `);
 
           if (remaining <= 0) {
             console.log("成功取物，共取出 " + totalTaken + " 个");
@@ -315,7 +312,6 @@ async function executeAirdropNew(itemlist: ItemRequest[]) {
   }
   // 空投 红色混凝土10组 粉色混凝土10组 黄色混凝土10组
   let message:string[] = [];
-  console.log(b);
   for(let i of itemlist.filter(x=>x.unit === "盒")){
     let T = await i.getItem();
     message.concat(T);
@@ -337,20 +333,18 @@ async function executeAirdropNew(itemlist: ItemRequest[]) {
 
 async function gotoPos(x: number, y: number, z: number, dis = 0.1) {
   const defaultMove = new Movements(bot);
-  bot.setControlState("sprint", true);
+  // bot.setControlState("sprint", true);
   defaultMove.allow1by1towers = false
   defaultMove.canDig = false;
   defaultMove.allowSprinting = true;
   defaultMove.allowParkour=true
 
   defaultMove.maxDropDown = 100
-  // @ts-ignore
   bot.pathfinder.setMovements(defaultMove);
 
   const goal = new GoalNear(x, y, z, dis);
   try {
     console.log(`正在前往 (${x}, ${y}, ${z})`);
-    // @ts-ignore
     await bot.pathfinder.goto(goal);
     console.log(`已到达 (${x}, ${y}, ${z})`);
   } catch (err: any) {
@@ -394,7 +388,6 @@ function setupBot() {
     const text = jsonMsg.toString();
     console.log(text)
     if (
-      text.includes(bot.username) ||
       text.startsWith("=") ||
       text.startsWith("附近")
     ) {
@@ -404,7 +397,7 @@ function setupBot() {
       /(\S+)\s+\[([-+]?\d+\.?\d*)\s*,\s*([-+]?\d+\.?\d*)\s*,\s*([-+]?\d+\.?\d*)\]/
     );
 
-    if (match) {
+    if (match && spawnFakePlayer) {
       const orgindim = match[1];
       const x = parseFloat(match[2]);
       const y = parseFloat(match[3]);
@@ -420,7 +413,6 @@ function setupBot() {
         dim = undefined;
       }
       if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
-        console.log(`捕获坐标：(${x}, ${y}, ${z}) in ${dim}`);
         if (spawnFakePlayer) {
           bot.chat(
             `/player ${fpn} spawn at ${x} ${y} ${z} facing 0 0 in ${dim}`
@@ -432,8 +424,6 @@ function setupBot() {
     }
   });
   bot.on("chat", async (username: string, message: string) => {
-    // if (username === bot.username) return;
-    // console.log("<"+username+">:", message)
     let targetUser = username;
     let msg = message;
     const giveMatch = msg.match(/^给(\S+?)(空投\s+.+)$/);
@@ -467,7 +457,7 @@ function setupBot() {
       doing=false;
       return;
     }
-    if(command === "空投滚木"){
+    else if(command === "空投滚木"){
       if(doing) return; doing=true;
       await executeAirdropNew([]);
        bot.chat(`/player ${fpn} kill`);
@@ -475,7 +465,7 @@ function setupBot() {
         spawnFakePlayer = true;
         doing=false
     }
-    if (command === "空投" || command === "1378" && command1 === "空投") {
+    else if (command === "空投" || command === "1378" && command1 === "空投") {
       let rest = parts.slice(1).join(" ");
       if(command === "1378") rest = parts.slice(2).join(" ");
       const re = /(\S+?)(\d+)([个组盒])/g;
@@ -513,11 +503,10 @@ function setupBot() {
       doing=false;
       return;
     }
-
-    if (command === "kill1378" || command === "1378" && command1 === "kill") {
+    else if (command === "kill1378" || command === "1378" && command1 === "kill") {
       bot.chat("!!kill");
     }
-    if (command === "1378" && command1 === "抽奖"){
+    else if (command === "1378" && command1 === "抽奖"){
       bot.chat("/tell "+username+" 正在抽奖中~")
       let prices = ["雪镇谷度假", "北雪镇度假", "南雪镇度假", "发配修铁路", "发配修建筑", "啥都没有", "啥都没有", "啥都没有", "啥都没有", 
         "8号线车票全程，必须做完", "S6号线车票全程，必须做完", "1号线车票全程，必须做完", "2号线车票全程，必须做完", "发配修铁路", "发配修建筑"]
@@ -530,7 +519,7 @@ function setupBot() {
         bot.chat("真·恭喜"+username+"抽到了"+prices[w]);
       }
     }
-    if(command === "1378" && command1 === "--help"){
+    else if(command === "1378" && command1 === "--help"){
       bot.chat("用法：")
       bot.chat("- 1378 空投 <itemname><count><unit> [<itemname2><count2><unit2>...]");
       bot.chat("- 1378 抽奖");
@@ -539,21 +528,30 @@ function setupBot() {
       bot.chat("- 1378 --help");
       bot.chat("- 1378 hello [<playername>]")
     }
-    if(command === "1378" && command1 === "--Version"){
+    else if(command === "1378" && command1 === "--Version"){
       bot.chat("lyh1378, Version 2.0.1")
     }
-    if(command === "1378" && command1 === "hello"){
+    else if(command === "1378" && command1 === "hello"){
       let command2 = parts[2] ?? username;
       bot.chat("你好！"+command2+"，全物品假人lyh1378为你服务。输入 \"1378 --help\"即可查看我的用法！");
     }
-    
+    else if(command === "1378"){
+      bot.chat("未知的指令。")
+      bot.chat("用法：")
+      bot.chat("- 1378 空投 <itemname><count><unit> [<itemname2><count2><unit2>...]");
+      bot.chat("- 1378 抽奖");
+      bot.chat("- 1378 kill");
+      bot.chat("- 1378 --Version");
+      bot.chat("- 1378 --help");
+      bot.chat("- 1378 hello [<playername>]")
+    }
   });
 
   bot.once("spawn", async () => {
     console.log("成功进入服务器");
     isReconnecting = false;
     await sleep(1000);
-    bot.chat("空投机器人lyh1378已上线（Version 2.0.1）");
+    bot.chat("空投机器人lyh1378已上线（Version 2.0.2）");
   });
 
   bot.on("end", (reason: string) => {
