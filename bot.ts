@@ -166,6 +166,7 @@ class ItemRequest {
           } else {
             bot.chat(`指定位置${this.take_positions}不是容器或容器已消失`);
             console.warn(`指定位置${this.take_positions}不是容器或容器已消失`);
+            successful=0;
             break;
           }
         }
@@ -225,7 +226,8 @@ class ItemRequest {
       }
     }
     if (remaining > 0) successful = 0;
-    if(successful) return [];
+    console.log(successful)
+    if(successful === 1) return [];
     else return [`${this.name}储量不足，只投放若干`];
   }
   usage(){
@@ -287,15 +289,23 @@ async function executeAirdropNew(itemlist: ItemRequest[]) {
   await sleep(500);
   let t1=0, t2=0, tmp=0;
   let b = [], t: ItemRequest[] = [];
+  let T=[]
+  for(let item of itemlist){
+    if(item.unit !== "盒" && (item.unit==="个"?1:64)*item.count>=item.stack*27){
+      T.push(new ItemRequest(item.name, Math.floor((item.unit==="个"?1:item.count)*item.count / (item.stack*27)), "盒"))
+      T.push(new ItemRequest(item.name, (item.unit==="个"?1:item.count)*item.count % (item.stack*27), "个"))
+    }else T.push(item);
+  }
+  itemlist=T;
   for(let item of itemlist){
     t1+=item.usage();
     if(item.unit === "盒") t2+=item.usage();
     else {
-      if(tmp+item.usage()>=27) {
-        t.push(new ItemRequest(item.name, 27-tmp, "组"));
+      if(tmp+item.usage()>=26) {
+        t.push(new ItemRequest(item.name, 26-tmp, "组"));
         b.push(t);
-        t=[];
-        t.push(new ItemRequest(item.name, item.count-(27-tmp) * (item.unit === "组"?1:item.stack), item.unit));
+        t=[]; // 不满盒可以拆，杂盒分类没问题
+        t.push(new ItemRequest(item.name, item.count-(26-tmp) * (item.unit === "组"?1:item.stack), item.unit));
       }
       else t.push(item);
       tmp+=item.usage();
@@ -310,27 +320,28 @@ async function executeAirdropNew(itemlist: ItemRequest[]) {
   }else{
     tmp=0;
   }
+  console.log(b)
   // 空投 红色混凝土10组 粉色混凝土10组 黄色混凝土10组
   let message:string[] = [];
   for(let i of itemlist.filter(x=>x.unit === "盒")){
-    let T = await i.getItem();
-    message.concat(T);
+    let TT = await i.getItem();
+    message.concat(TT);
     await dropToFakePlayer();
   }
   for(let i of b){
     for(let j of i){
-      let T = await j.getItem();
-      message.concat(T);
+      let TT = await j.getItem(); 
+      console.info(TT)
+      message.concat(TT);
     }
     if(!tmp){
       await toPack();
     }
     await dropToFakePlayer();
   }
-
+  console.info(message)
   return message.join("\n");
 }
-
 async function gotoPos(x: number, y: number, z: number, dis = 0.1) {
   const defaultMove = new Movements(bot);
   // bot.setControlState("sprint", true);
@@ -384,7 +395,7 @@ function setupBot() {
     killInterval = setInterval(autoKill, 5000);
   });
 
-  bot.on("message", (jsonMsg: string) => {
+  bot.on("message", async (jsonMsg: string) => {
     const text = jsonMsg.toString();
     console.log(text)
     if (
@@ -414,6 +425,8 @@ function setupBot() {
       }
       if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
         if (spawnFakePlayer) {
+          bot.chat(`/player ${fpn} kill`);
+          await sleep(500)
           bot.chat(
             `/player ${fpn} spawn at ${x} ${y} ${z} facing 0 0 in ${dim}`
           );
@@ -426,7 +439,7 @@ function setupBot() {
   bot.on("chat", async (username: string, message: string) => {
     let targetUser = username;
     let msg = message;
-    const giveMatch = msg.match(/^给(\S+?)(空投\s+.+)$/);
+    const giveMatch = msg.match(/^给(\S+?)\s*(空投\s+.+)$/);
     if (giveMatch) {
       targetUser = giveMatch[1];
       msg = giveMatch[2];
@@ -460,15 +473,15 @@ function setupBot() {
     else if(command === "空投滚木"){
       if(doing) return; doing=true;
       await executeAirdropNew([]);
-       bot.chat(`/player ${fpn} kill`);
-        bot.chat(`${targetUser}在哪`);
         spawnFakePlayer = true;
+      //  bot.chat(`/player ${fpn} kill`);
+        bot.chat(`${targetUser}在哪`);
         doing=false
     }
     else if (command === "空投" || command === "1378" && command1 === "空投") {
       let rest = parts.slice(1).join(" ");
       if(command === "1378") rest = parts.slice(2).join(" ");
-      const re = /(\S+?)(\d+)([个组盒])/g;
+      const re = /\s*(\S+?)\s*(\d+)\s*([个组盒])\s*/g;
       let match;
       const airdrops = [];
       while ((match = re.exec(rest)) !== null) {
@@ -496,10 +509,10 @@ function setupBot() {
       console.log(airdrops)
       const result = await executeAirdropNew(airdrops);
       cfp = false;
+      console.log(result)
       bot.chat(result);
-      bot.chat(`/player ${fpn} kill`);
-      bot.chat(`${targetUser}在哪`);
       spawnFakePlayer = true;
+      bot.chat(`${targetUser}在哪`);
       doing=false;
       return;
     }
@@ -551,7 +564,7 @@ function setupBot() {
     console.log("成功进入服务器");
     isReconnecting = false;
     await sleep(1000);
-    bot.chat("空投机器人lyh1378已上线（Version 2.0.2）");
+    bot.chat("空投机器人lyh1378已上线（Version 2.0.3）");
   });
 
   bot.on("end", (reason: string) => {
