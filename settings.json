@@ -1,4 +1,5 @@
 {
     "fake_player_name":"bot_airdrop",
-    "clear_fake_player_default":"false"
+    "clear_fake_player_default":"false",
+    "craft_player_prefix": "bot_1378craft"
 }

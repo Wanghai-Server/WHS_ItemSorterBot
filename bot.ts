@@ -2,6 +2,7 @@ const mineflayer = require("mineflayer");
 const pathfinder = require("mineflayer-pathfinder").pathfinder;
 const Movements = require("mineflayer-pathfinder").Movements;
 const { GoalNear, GoalExact } = require("mineflayer-pathfinder").goals;
+// require("./dev/craft");
 // const pvp = require('mineflayer-pvp').plugin
 const { Vec3 } = require("vec3");
 
