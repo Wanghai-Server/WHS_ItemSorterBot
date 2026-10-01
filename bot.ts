@@ -22,7 +22,7 @@ let canHello = false;
 let spawnFakePlayer = false;
 let successToGetSbox = false;
 const RECONNECT_DELAY = 2000;
-let Version = "Version 2.0.3-dev-b";
+let Version = "Version 2.0.3-dev-c";
 let isReconnecting = false;
 // doesn't provide a export named 'name'
 import B from "./ban.json" with {type: "json"};
