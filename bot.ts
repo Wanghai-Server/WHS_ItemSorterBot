@@ -12,7 +12,7 @@ const botOptions = {
   host: "h1.getmc.cn",
   username: "lyh1378",
   port: 31410,
-  version: "1.21.10",
+  version: "1.21.11",
   keepAlive: true,
 };
 import { fake_player_name as fpn, clear_fake_player_default as clearFakePlayer } from "./settings.ts" with {type: "json"} 
@@ -27,7 +27,7 @@ let isReconnecting = false;
 // doesn't provide a export named 'name'
 import B from "./ban.json" with {type: "json"};
 // 解决ban有default的问题
-let ban = B;
+let ban = B as string[];
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
